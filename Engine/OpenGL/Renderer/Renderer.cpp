@@ -287,8 +287,6 @@ namespace StarEngine::Renderer
 		m_DeferredGeometryFrameBuffer->GetBitangentTexture()->Mount(5);
 		m_DeferredGeometryFrameBuffer->GetMRAOTexture()->Mount(6);
 
-		
-
 		VertexArray->Bind();
 		VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
 		VertexArray->Unbind();
