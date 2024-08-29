@@ -1,0 +1,13 @@
+#pragma once
+
+namespace StarEngine
+{
+	enum TextureWrap : U32
+	{
+		TEXTURE_WRAP_NONE = 0,
+		TEXTURE_WRAP_REPEAT = 0x2901,
+		TEXTURE_WRAP_MIRRORED_REPEAT = 0x8370,
+		TEXTURE_WRAP_CLAMP_TO_EDGE = 0x812F,
+		TEXTURE_WRAP_CLAMP_TO_BORDER = 0x812D,
+	};
+}

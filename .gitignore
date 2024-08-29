@@ -1,3 +1,7 @@
+##########################################################
+# CMake
+##########################################################
+
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -10,3 +14,17 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+
+##########################################################
+# Star Engine
+##########################################################
+
+# Build Types
+Debug
+Release
+RelWithDebInfo
+MinSizeRel
+
+# Assets
+Textures
+Models

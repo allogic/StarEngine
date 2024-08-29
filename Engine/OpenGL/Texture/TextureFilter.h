@@ -1,0 +1,12 @@
+#pragma once
+
+namespace StarEngine
+{
+	enum TextureFilter : U32
+	{
+		TEXTURE_FILTER_NONE = 0,
+		TEXTURE_FILTER_NEAREST = 0x2600,
+		TEXTURE_FILTER_LINEAR = 0x2601,
+		TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR = 0x2703,
+	};
+}

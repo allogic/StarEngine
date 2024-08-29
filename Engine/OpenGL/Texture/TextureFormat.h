@@ -1,0 +1,14 @@
+#pragma once
+
+namespace StarEngine
+{
+	enum TextureFormat : U32
+	{
+		TEXTURE_FORMAT_NONE = 0,
+		TEXTURE_FORMAT_RGBA = 0x1908,
+		TEXTURE_FORMAT_RGB = 0x1907,
+		TEXTURE_FORMAT_RG = 0x8227,
+		TEXTURE_FORMAT_R = 0x1903,
+		TEXTURE_FORMAT_DEPTH_STENCIL = 0x84F9,
+	};
+}
