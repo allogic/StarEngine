@@ -1,19 +1,15 @@
 ﻿#include <Engine/PreCompiled.h>
 #include <Engine/Model.h>
-#include <Engine/ModelRegistry.h>
 
 #include <Engine/GLAD/glad.h>
 
 #include <Engine/GLFW/glfw3.h>
 
 #include <Engine/OpenGL/Gizmo.h>
-#include <Engine/OpenGL/MaterialRegistry.h>
 
 #include <Engine/OpenGL/Renderer/Renderer.h>
 
 #include <Engine/OpenGL/VertexArray/PrimitiveVertexArrays.h>
-
-#include <Engine/OpenGL/Shader/ShaderRegistry.h>
 
 /*
  * TODO:
@@ -52,6 +48,8 @@ static U32 m_WindowAntiAliasing = 8;
 
 static R32 m_AspectRatio = (R32)m_WindowWidth / m_WindowHeight;
 
+static R32 m_PrevTimeHotLoad = 0.0F;
+
 #ifdef SE_DEBUG
 
 static VOID GLDebugCallback(U32 Source, U32 Type, U32 Id, U32 Severity, I32 Length, CHAR const* Message, VOID const* UserParam);
@@ -89,11 +87,7 @@ I32 main(I32 Argc, CHAR** Argv)
 
 				glDebugMessageCallback(GLDebugCallback, 0);
 
-				fs::path RootFilePath = "C:\\Users\\mialb\\Downloads\\StarEngine";
-
-				ShaderRegistry::Create(RootFilePath / "Shaders");
-				MaterialRegistry::Create(RootFilePath / "Textures");
-				ModelRegistry::Create(RootFilePath / "Models");
+				AssetLoader::Create("C:\\Users\\mialb\\Downloads\\StarEngine\\Assets");
 
 				PrimitiveVertexArrays::Create();
 
@@ -130,7 +124,7 @@ I32 main(I32 Argc, CHAR** Argv)
 				}
 
 				{
-					entt::entity CockpitEntity = ModelRegistry::GetModelByName("Cockpit")->CreateEntity(Registry);
+					//entt::entity CockpitEntity = ModelRegistry::GetModelByName("Cockpit")->CreateEntity(Registry);
 				}
 
 				glfwSetWindowSizeCallback(Context, WindowResizeCallback);
@@ -143,6 +137,13 @@ I32 main(I32 Argc, CHAR** Argv)
 				{
 					Time::Update();
 					Event::Update(Context);
+
+					if ((Time::GetTime() - m_PrevTimeHotLoad) > 1.0F)
+					{
+						m_PrevTimeHotLoad = Time::GetTime();
+
+						AssetLoader::Update();
+					}
 
 					ControllerSystem::UpdateInputs(Registry);
 					PhysicsSystem::UpdateVelocities(Registry);
@@ -157,9 +158,7 @@ I32 main(I32 Argc, CHAR** Argv)
 
 				PrimitiveVertexArrays::Destroy();
 
-				ModelRegistry::Destroy();
-				MaterialRegistry::Destroy();
-				ShaderRegistry::Destroy();
+				AssetLoader::Destroy();
 			}
 			else
 			{

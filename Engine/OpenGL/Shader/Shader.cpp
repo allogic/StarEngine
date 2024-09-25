@@ -8,28 +8,18 @@
 
 namespace StarEngine
 {
-	Shader::Shader()
+	Shader::Shader(fs::path const& VertexShaderFilePath, fs::path const& FragmentShaderFilePath)
 	{
+		std::string VertexSource = "";
+		std::string FragmentSource = "";
 
-	}
+		FileSystem::ReadTextFile(VertexShaderFilePath, VertexSource);
+		FileSystem::ReadTextFile(FragmentShaderFilePath, FragmentSource);
 
-	Shader::~Shader()
-	{
-		glDeleteProgram(_Program);
-	}
-
-	VOID Shader::Load(fs::path const& VertexShaderFilePath, fs::path const& FragmentShaderFilePath)
-	{
 		_Program = glCreateProgram();
 
 		U32 VertexShader = glCreateShader(GL_VERTEX_SHADER);
 		U32 FragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-		std::string VertexSource;
-		std::string FragmentSource;
-
-		FileSystem::ReadTextFile(VertexShaderFilePath, VertexSource);
-		FileSystem::ReadTextFile(FragmentShaderFilePath, FragmentSource);
 
 		CHAR const* VertexSourcePtr = VertexSource.data();
 		CHAR const* FragmentSourcePtr = FragmentSource.data();
@@ -65,6 +55,11 @@ namespace StarEngine
 
 		glDeleteShader(VertexShader);
 		glDeleteShader(FragmentShader);
+	}
+
+	Shader::~Shader()
+	{
+		glDeleteProgram(_Program);
 	}
 
 	VOID Shader::Bind() const

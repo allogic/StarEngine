@@ -6,13 +6,9 @@ namespace StarEngine
 	{
 	public:
 
-		Shader();
+		Shader(fs::path const& VertexShaderFilePath, fs::path const& FragmentShaderFilePath);
 
 		virtual ~Shader();
-
-	public:
-
-		VOID Load(fs::path const& VertexShaderFilePath, fs::path const& FragmentShaderFilePath);
 
 	public:
 
@@ -28,8 +24,6 @@ namespace StarEngine
 		VOID SetR32V3(std::string const& UniformName, R32V3 const& Vector) const;
 
 		VOID SetR32M4(std::string const& UniformName, R32M4 const& Matrix) const;
-
-	private:
 
 #ifdef SE_DEBUG
 

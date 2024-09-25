@@ -1,11 +1,9 @@
 #include <Engine/PreCompiled.h>
+#include <Engine/Mesh.h>
 
 #include <Engine/GLAD/glad.h>
 
 #include <Engine/OpenGL/Gizmo.h>
-#include <Engine/OpenGL/Mesh.h>
-#include <Engine/OpenGL/Material.h>
-#include <Engine/OpenGL/MaterialRegistry.h>
 
 #include <Engine/OpenGL/Buffer/StorageBuffer.h>
 
@@ -13,11 +11,14 @@
 #include <Engine/OpenGL/FrameBuffer/DeferredGeometryFrameBuffer.h>
 #include <Engine/OpenGL/FrameBuffer/DeferredLightingFrameBuffer.h>
 
+#include <Engine/OpenGL/Material/Material.h>
+#include <Engine/OpenGL/Material/PrincipledBRDFMaterial.h>
+#include <Engine/OpenGL/Material/SkyBoxMaterial.h>
+
 #include <Engine/OpenGL/Renderer/LightTypes.h>
 #include <Engine/OpenGL/Renderer/Renderer.h>
 
 #include <Engine/OpenGL/Shader/Shader.h>
-#include <Engine/OpenGL/Shader/ShaderRegistry.h>
 
 #include <Engine/OpenGL/Texture/CubeMap.h>
 #include <Engine/OpenGL/Texture/Texture2D.h>
@@ -45,6 +46,11 @@ namespace StarEngine::Renderer
 	static R32M4 m_View = {};
 	static R32M4 m_Model = {};
 
+	static ShaderReference const* m_DeferredGeometryShaderReference = nullptr;
+	static ShaderReference const* m_DeferredLightingShaderReference = nullptr;
+	static ShaderReference const* m_SpaceBoxShaderReference = nullptr;
+	static ShaderReference const* m_PassThroughShaderReference = nullptr;
+
 	static U32 m_Width = 0;
 	static U32 m_Height = 0;
 
@@ -56,6 +62,11 @@ namespace StarEngine::Renderer
 
 	VOID Create(U32 const Width, U32 const Height)
 	{
+		m_DeferredGeometryShaderReference = AssetLoader::GetShaderByName("DeferredGeometry");
+		m_DeferredLightingShaderReference = AssetLoader::GetShaderByName("DeferredLighting");
+		m_SpaceBoxShaderReference = AssetLoader::GetShaderByName("SpaceBox");
+		m_PassThroughShaderReference = AssetLoader::GetShaderByName("PassThrough");
+
 		m_Width = Width;
 		m_Height = Height;
 
@@ -179,48 +190,60 @@ namespace StarEngine::Renderer
 			m_Model *= glm::mat4_cast(TransformSystem::GetWorldRotation(Transform));
 			m_Model = glm::scale(m_Model, TransformSystem::GetWorldScale(Transform));
 
-			Material* Material = Renderable.Mesh->GetMaterial();
-			Shader* Shader = Material->GetShader();
-			VertexArray* VertexArray = Renderable.Mesh->GetVertexArray();
+			Shader const* Shader = m_DeferredGeometryShaderReference->GetShader();
 
-			Texture2D* AlbedoTexture = Material->GetAlbedoTexture();
-			Texture2D* NormalTexture = Material->GetNormalTexture();
-			Texture2D* MetallicTexture = Material->GetMetallicTexture();
-			Texture2D* RoughnessTexture = Material->GetRoughnessTexture();
-			Texture2D* AmbientOcclusionTexture = Material->GetAmbientOcclusionTexture();
-			Texture2D* HeightTexture = Material->GetHeightTexture();
-			Texture2D* EmissiveTexture = Material->GetEmissiveTexture();
-			Texture2D* OpacityTexture = Material->GetOpacityTexture();
+			if (Shader)
+			{
+				Shader->Bind();
 
-			Shader->Bind();
+				Shader->SetR32M4("Projection", m_Projection);
+				Shader->SetR32M4("View", m_View);
+				Shader->SetR32M4("Model", m_Model);
 
-			Shader->SetR32M4("Projection", m_Projection);
-			Shader->SetR32M4("View", m_View);
-			Shader->SetR32M4("Model", m_Model);
+				Mesh* Mesh = Renderable.Mesh;
 
-			if (AlbedoTexture) AlbedoTexture->Mount(0);
-			if (NormalTexture) NormalTexture->Mount(1);
-			if (MetallicTexture) MetallicTexture->Mount(2);
-			if (RoughnessTexture) RoughnessTexture->Mount(3);
-			if (AmbientOcclusionTexture) AmbientOcclusionTexture->Mount(4);
-			if (HeightTexture) HeightTexture->Mount(5);
-			if (EmissiveTexture) EmissiveTexture->Mount(6);
-			if (OpacityTexture) OpacityTexture->Mount(7);
+				MaterialReference const* MaterialReference = Mesh->GetMaterialReference();
 
-			VertexArray->Bind();
-			VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
-			VertexArray->Unbind();
+				PrincipledBRDFMaterial const* Material = (PrincipledBRDFMaterial const*)MaterialReference->GetMaterial();
 
-			if (AlbedoTexture) AlbedoTexture->Unmount(0);
-			if (NormalTexture) NormalTexture->Unmount(1);
-			if (MetallicTexture) MetallicTexture->Unmount(2);
-			if (RoughnessTexture) RoughnessTexture->Unmount(3);
-			if (AmbientOcclusionTexture) AmbientOcclusionTexture->Unmount(4);
-			if (HeightTexture) HeightTexture->Unmount(5);
-			if (EmissiveTexture) EmissiveTexture->Unmount(6);
-			if (OpacityTexture) OpacityTexture->Unmount(7);
+				if (Material)
+				{
+					Texture2DReference const* AlbedoTextureReference = Material->GetAlbedoTextureReference();
+					Texture2DReference const* NormalTextureReference = Material->GetNormalTextureReference();
+					Texture2DReference const* MetallicTextureReference = Material->GetMetallicTextureReference();
+					Texture2DReference const* RoughnessTextureReference = Material->GetRoughnessTextureReference();
+					Texture2DReference const* AmbientOcclusionTextureReference = Material->GetAmbientOcclusionTextureReference();
+					Texture2DReference const* HeightTextureReference = Material->GetHeightTextureReference();
+					Texture2DReference const* EmissiveTextureReference = Material->GetEmissiveTextureReference();
+					Texture2DReference const* OpacityTextureReference = Material->GetOpacityTextureReference();
 
-			Shader->Unbind();
+					if (AlbedoTextureReference->GetTexture2D()) AlbedoTextureReference->GetTexture2D()->Mount(0);
+					if (NormalTextureReference->GetTexture2D()) NormalTextureReference->GetTexture2D()->Mount(1);
+					if (MetallicTextureReference->GetTexture2D()) MetallicTextureReference->GetTexture2D()->Mount(2);
+					if (RoughnessTextureReference->GetTexture2D()) RoughnessTextureReference->GetTexture2D()->Mount(3);
+					if (AmbientOcclusionTextureReference->GetTexture2D()) AmbientOcclusionTextureReference->GetTexture2D()->Mount(4);
+					if (HeightTextureReference->GetTexture2D()) HeightTextureReference->GetTexture2D()->Mount(5);
+					if (EmissiveTextureReference->GetTexture2D()) EmissiveTextureReference->GetTexture2D()->Mount(6);
+					if (OpacityTextureReference->GetTexture2D()) OpacityTextureReference->GetTexture2D()->Mount(7);
+
+					VertexArray* VertexArray = Mesh->GetVertexArray();
+
+					VertexArray->Bind();
+					VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
+					VertexArray->Unbind();
+
+					if (AlbedoTextureReference->GetTexture2D()) AlbedoTextureReference->GetTexture2D()->Unmount(0);
+					if (NormalTextureReference->GetTexture2D()) NormalTextureReference->GetTexture2D()->Unmount(1);
+					if (MetallicTextureReference->GetTexture2D()) MetallicTextureReference->GetTexture2D()->Unmount(2);
+					if (RoughnessTextureReference->GetTexture2D()) RoughnessTextureReference->GetTexture2D()->Unmount(3);
+					if (AmbientOcclusionTextureReference->GetTexture2D()) AmbientOcclusionTextureReference->GetTexture2D()->Unmount(4);
+					if (HeightTextureReference->GetTexture2D()) HeightTextureReference->GetTexture2D()->Unmount(5);
+					if (EmissiveTextureReference->GetTexture2D()) EmissiveTextureReference->GetTexture2D()->Unmount(6);
+					if (OpacityTextureReference->GetTexture2D()) OpacityTextureReference->GetTexture2D()->Unmount(7);
+				}
+
+				Shader->Unbind();
+			}
 		}
 
 		glDisable(GL_CULL_FACE);
@@ -269,39 +292,43 @@ namespace StarEngine::Renderer
 		m_PointLightBuffer->EndBarrier();
 		m_PointLightBuffer->Unbind();
 
-		Shader* Shader = ShaderRegistry::GetShaderByName("PrincipledBRDF/DeferredLighting");
-		VertexArray* VertexArray = PrimitiveVertexArrays::GetPrincipledBRDFLightingQuad();
+		Shader const* Shader = m_DeferredLightingShaderReference->GetShader();
 
-		Shader->Bind();
+		if (Shader)
+		{
+			Shader->Bind();
 
-		Shader->SetU32("PointLightCount", (U32)PointLightCount);
-		Shader->SetR32V3("CameraPosition", CameraPosition);
+			Shader->SetU32("PointLightCount", (U32)PointLightCount);
+			Shader->SetR32V3("CameraPosition", CameraPosition);
 
-		m_PointLightBuffer->Mount(0);
+			m_PointLightBuffer->Mount(0);
 
-		m_DeferredGeometryFrameBuffer->GetWorldPositionTexture()->Mount(0);
-		m_DeferredGeometryFrameBuffer->GetWorldNormalTexture()->Mount(1);
-		m_DeferredGeometryFrameBuffer->GetAlbedoTexture()->Mount(2);
-		m_DeferredGeometryFrameBuffer->GetNormalTexture()->Mount(3);
-		m_DeferredGeometryFrameBuffer->GetTangentTexture()->Mount(4);
-		m_DeferredGeometryFrameBuffer->GetBitangentTexture()->Mount(5);
-		m_DeferredGeometryFrameBuffer->GetMRAOTexture()->Mount(6);
+			m_DeferredGeometryFrameBuffer->GetWorldPositionTexture()->Mount(0);
+			m_DeferredGeometryFrameBuffer->GetWorldNormalTexture()->Mount(1);
+			m_DeferredGeometryFrameBuffer->GetAlbedoTexture()->Mount(2);
+			m_DeferredGeometryFrameBuffer->GetNormalTexture()->Mount(3);
+			m_DeferredGeometryFrameBuffer->GetTangentTexture()->Mount(4);
+			m_DeferredGeometryFrameBuffer->GetBitangentTexture()->Mount(5);
+			m_DeferredGeometryFrameBuffer->GetMRAOTexture()->Mount(6);
 
-		VertexArray->Bind();
-		VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
-		VertexArray->Unbind();
+			VertexArray* VertexArray = PrimitiveVertexArrays::GetPrincipledBRDFLightingQuad();
 
-		m_DeferredGeometryFrameBuffer->GetWorldPositionTexture()->Unmount(0);
-		m_DeferredGeometryFrameBuffer->GetWorldNormalTexture()->Unmount(1);
-		m_DeferredGeometryFrameBuffer->GetAlbedoTexture()->Unmount(2);
-		m_DeferredGeometryFrameBuffer->GetNormalTexture()->Unmount(3);
-		m_DeferredGeometryFrameBuffer->GetTangentTexture()->Unmount(4);
-		m_DeferredGeometryFrameBuffer->GetBitangentTexture()->Unmount(5);
-		m_DeferredGeometryFrameBuffer->GetMRAOTexture()->Unmount(6);
+			VertexArray->Bind();
+			VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
+			VertexArray->Unbind();
 
-		m_PointLightBuffer->Unmount(0);
+			m_DeferredGeometryFrameBuffer->GetWorldPositionTexture()->Unmount(0);
+			m_DeferredGeometryFrameBuffer->GetWorldNormalTexture()->Unmount(1);
+			m_DeferredGeometryFrameBuffer->GetAlbedoTexture()->Unmount(2);
+			m_DeferredGeometryFrameBuffer->GetNormalTexture()->Unmount(3);
+			m_DeferredGeometryFrameBuffer->GetTangentTexture()->Unmount(4);
+			m_DeferredGeometryFrameBuffer->GetBitangentTexture()->Unmount(5);
+			m_DeferredGeometryFrameBuffer->GetMRAOTexture()->Unmount(6);
 
-		Shader->Unbind();
+			m_PointLightBuffer->Unmount(0);
+
+			Shader->Unbind();
+		}
 
 		m_DeferredLightingFrameBuffer->UnbindWrite();
 	}
@@ -340,26 +367,38 @@ namespace StarEngine::Renderer
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 
-		Material* Material = MaterialRegistry::GetMaterialByName("SkyBox/Space");
-		Shader* Shader = Material->GetShader();
-		VertexArray* VertexArray = PrimitiveVertexArrays::GetSkyBoxCube();
+		Shader const* Shader = m_SpaceBoxShaderReference->GetShader();
 
-		CubeMap* CubeMap = Material->GetCubeMap();
+		if (Shader)
+		{
+			Shader->Bind();
 
-		Shader->Bind();
+			Shader->SetR32M4("Projection", m_Projection);
+			Shader->SetR32M4("View", R32M4{ R32M3{ m_View } });
 
-		Shader->SetR32M4("Projection", m_Projection);
-		Shader->SetR32M4("View", R32M4{ R32M3{ m_View } });
-
-		if (CubeMap) CubeMap->Mount(0);
-
-		VertexArray->Bind();
-		VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
-		VertexArray->Unbind();
-
-		if (CubeMap) CubeMap->Unmount(0);
-
-		Shader->Bind();
+			//AssetLoader::MaterialReference const& MaterialReference = AssetLoader::GetMaterialByName(""); // TODO
+			//
+			//SkyBoxMaterial* Material = (SkyBoxMaterial*)MaterialReference.Material;
+			//
+			//if (Material)
+			//{
+			//	AssetLoader::CubeMapReference const& CubeMapReference = AssetLoader::GetCubeMapByName(Material->Get);
+			//
+			//	CubeMap* CubeMap = Material->GetCubeMap();
+			//
+			//	if (CubeMap) CubeMap->Mount(0);
+			//
+			//	VertexArray* VertexArray = PrimitiveVertexArrays::GetSkyBoxCube();
+			//
+			//	VertexArray->Bind();
+			//	VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
+			//	VertexArray->Unbind();
+			//
+			//	if (CubeMap) CubeMap->Unmount(0);
+			//
+			//	Shader->Bind();
+			//}
+		}
 
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
@@ -368,32 +407,34 @@ namespace StarEngine::Renderer
 	}
 
 	static VOID PostProcessPass()
-	{
-		// TODO: Create post process pipeline..
-
+	{	
 		glEnable(GL_CULL_FACE);
-		
+
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 		
-		Shader* Shader = ShaderRegistry::GetShaderByName("PostProcess/PassThrough");
-		VertexArray* VertexArray = PrimitiveVertexArrays::GetPostProcessQuad();
+		Shader const* Shader = m_PassThroughShaderReference->GetShader();
+
+		if (Shader)
+		{		
+			Shader->Bind();
 		
-		Shader->Bind();
+			Shader->SetR32M4("Projection", m_Projection);
+			Shader->SetR32M4("View", m_View);
 		
-		Shader->SetR32M4("Projection", m_Projection);
-		Shader->SetR32M4("View", m_View);
+			m_DefaultFrameBuffer->GetColorTexture()->Mount(0);
 		
-		m_DefaultFrameBuffer->GetColorTexture()->Mount(0);
+			VertexArray* VertexArray = PrimitiveVertexArrays::GetPostProcessQuad();
+
+			VertexArray->Bind();
+			VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
+			VertexArray->Unbind();
 		
-		VertexArray->Bind();
-		VertexArray->Draw(RenderMode::RENDER_MODE_TRIANGLES);
-		VertexArray->Unbind();
+			m_DefaultFrameBuffer->GetColorTexture()->Unmount(0);
 		
-		m_DefaultFrameBuffer->GetColorTexture()->Unmount(0);
-		
-		Shader->Bind();
-		
+			Shader->Bind();
+		}
+
 		glDisable(GL_CULL_FACE);
 	}
 }

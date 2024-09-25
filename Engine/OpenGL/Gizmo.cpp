@@ -3,7 +3,6 @@
 #include <Engine/OpenGL/Gizmo.h>
 
 #include <Engine/OpenGL/Shader/Shader.h>
-#include <Engine/OpenGL/Shader/ShaderRegistry.h>
 
 #include <Engine/OpenGL/VertexArray/VertexArray.h>
 
@@ -15,11 +14,10 @@ namespace StarEngine::Gizmo
 	constexpr U64 QUAD_BATCH_VERTEX_BUFFER_COUNT = 0x10000;
 	constexpr U64 QUAD_BATCH_INDEX_BUFFER_COUNT = 0x60000;
 
-	static Shader* m_LineShader = nullptr;
-	static Shader* m_QuadShader = nullptr;
-
-	static Shader* m_LineBatchShader = nullptr;
-	static Shader* m_QuadBatchShader = nullptr;
+	static ShaderReference const* m_GizmoLineShaderReference = nullptr;
+	static ShaderReference const* m_GizmoQuadShaderReference = nullptr;
+	static ShaderReference const* m_GizmoLineBatchShaderReference = nullptr;
+	static ShaderReference const* m_GizmoQuadBatchShaderReference = nullptr;
 
 	static VertexArray* m_LineVertexArray = nullptr;
 	static VertexArray* m_QuadVertexArray = nullptr;
@@ -38,11 +36,10 @@ namespace StarEngine::Gizmo
 
 	VOID Create()
 	{
-		m_LineShader = ShaderRegistry::GetShaderByName("Gizmo/Line");
-		m_QuadShader = ShaderRegistry::GetShaderByName("Gizmo/Quad");
-
-		m_LineBatchShader = ShaderRegistry::GetShaderByName("Gizmo/LineBatch");
-		m_QuadBatchShader = ShaderRegistry::GetShaderByName("Gizmo/QuadBatch");
+		m_GizmoLineShaderReference = AssetLoader::GetShaderByName("GizmoLine");
+		m_GizmoQuadShaderReference = AssetLoader::GetShaderByName("GizmoQuad");
+		m_GizmoLineBatchShaderReference = AssetLoader::GetShaderByName("GizmoLineBatch");
+		m_GizmoQuadBatchShaderReference = AssetLoader::GetShaderByName("GizmoQuadBatch");
 
 		m_LineVertexArray = new (Memory::Alloc(sizeof(VertexArray))) VertexArray(VertexType::VERTEX_TYPE_GIZMO_LINE);
 		m_QuadVertexArray = new (Memory::Alloc(sizeof(VertexArray))) VertexArray(VertexType::VERTEX_TYPE_GIZMO_QUAD);
@@ -80,11 +77,16 @@ namespace StarEngine::Gizmo
 
 	VOID BeginLines(R32M4 const& Projection, R32M4 const& View, R32M4 const& Model)
 	{
-		m_LineShader->Bind();
+		Shader const* Shader = m_GizmoLineShaderReference->GetShader();
 
-		m_LineShader->SetR32M4("Projection", Projection);
-		m_LineShader->SetR32M4("View", View);
-		m_LineShader->SetR32M4("Model", Model);
+		if (Shader)
+		{
+			Shader->Bind();
+
+			Shader->SetR32M4("Projection", Projection);
+			Shader->SetR32M4("View", View);
+			Shader->SetR32M4("Model", Model);
+		}
 	}
 
 	VOID DrawLine(R32V3 const& From, R32V3 const& To, U32 Color)
@@ -114,16 +116,26 @@ namespace StarEngine::Gizmo
 
 	VOID EndLines()
 	{
-		m_LineShader->Unbind();
+		Shader const* Shader = m_GizmoLineShaderReference->GetShader();
+
+		if (Shader)
+		{
+			Shader->Unbind();
+		}
 	}
 
 	VOID BeginQuads(R32M4 const& Projection, R32M4 const& View, R32M4 const& Model)
 	{
-		m_QuadShader->Bind();
+		Shader const* Shader = m_GizmoQuadShaderReference->GetShader();
 
-		m_QuadShader->SetR32M4("Projection", Projection);
-		m_QuadShader->SetR32M4("View", View);
-		m_QuadShader->SetR32M4("Model", Model);
+		if (Shader)
+		{
+			Shader->Bind();
+
+			Shader->SetR32M4("Projection", Projection);
+			Shader->SetR32M4("View", View);
+			Shader->SetR32M4("Model", Model);
+		}
 	}
 
 	VOID DrawQuad(R32V3 const& Position, R32V2 const& Size, U32 Color)
@@ -176,15 +188,25 @@ namespace StarEngine::Gizmo
 
 	VOID EndQuads()
 	{
-		m_QuadShader->Unbind();
+		Shader const* Shader = m_GizmoQuadShaderReference->GetShader();
+
+		if (Shader)
+		{
+			Shader->Unbind();
+		}
 	}
 
 	VOID BeginLineBatch(R32M4 const& Projection, R32M4 const& View)
 	{
-		m_LineBatchShader->Bind();
+		Shader const* Shader = m_GizmoLineBatchShaderReference->GetShader();
 
-		m_LineBatchShader->SetR32M4("Projection", Projection);
-		m_LineBatchShader->SetR32M4("View", View);
+		if (Shader)
+		{
+			Shader->Bind();
+
+			Shader->SetR32M4("Projection", Projection);
+			Shader->SetR32M4("View", View);
+		}
 	}
 
 	VOID PushBatchLine(R32V3 const& From, R32V3 const& To, U32 Color)
@@ -291,15 +313,25 @@ namespace StarEngine::Gizmo
 
 	VOID EndLineBatch()
 	{
-		m_LineBatchShader->Unbind();
+		Shader const* Shader = m_GizmoLineBatchShaderReference->GetShader();
+
+		if (Shader)
+		{
+			Shader->Unbind();
+		}
 	}
 
 	VOID BeginQuadBatch(R32M4 const& Projection, R32M4 const& View)
 	{
-		m_QuadBatchShader->Bind();
+		Shader const* Shader = m_GizmoQuadBatchShaderReference->GetShader();
 
-		m_QuadBatchShader->SetR32M4("Projection", Projection);
-		m_QuadBatchShader->SetR32M4("View", View);
+		if (Shader)
+		{
+			Shader->Bind();
+
+			Shader->SetR32M4("Projection", Projection);
+			Shader->SetR32M4("View", View);
+		}
 	}
 
 	VOID PushBatchQuad(R32V3 const& Position, R32V2 const& Size, U32 Color)
@@ -358,6 +390,11 @@ namespace StarEngine::Gizmo
 
 	VOID EndQuadBatch()
 	{
-		m_QuadBatchShader->Unbind();
+		Shader const* Shader = m_GizmoQuadBatchShaderReference->GetShader();
+
+		if (Shader)
+		{
+			Shader->Unbind();
+		}
 	}
 }

@@ -15,6 +15,13 @@ namespace Assimp
 
 namespace StarEngine
 {
+	class AssetReference;
+	class MaterialReference;
+	class ModelReference;
+	class ShaderReference;
+	class SkyBoxReference;
+	class Texture2DReference;
+
 	class IndexBuffer;
 	class StorageBuffer;
 	class UniformBuffer;
@@ -31,6 +38,9 @@ namespace StarEngine
 
 	class Material;
 	class Mesh;
-
 	class Model;
+	class SkyBox;
+
+	class FileObserver;
+	class WatchDog;
 }

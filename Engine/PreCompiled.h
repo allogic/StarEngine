@@ -20,6 +20,9 @@
 #include <limits>
 #include <functional>
 #include <bitset>
+#include <regex>
+
+namespace fs = std::filesystem;
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -50,4 +53,11 @@
 #include <Engine/EnTT/Systems/ControllerSystem.h>
 #include <Engine/EnTT/Systems/PhysicsSystem.h>
 
-namespace fs = std::filesystem;
+#include <Engine/AssetLoader/AssetLoader.h>
+
+#include <Engine/AssetLoader/AssetReference/AssetReference.h>
+#include <Engine/AssetLoader/AssetReference/MaterialReference.h>
+#include <Engine/AssetLoader/AssetReference/ModelReference.h>
+#include <Engine/AssetLoader/AssetReference/ShaderReference.h>
+#include <Engine/AssetLoader/AssetReference/SkyBoxReference.h>
+#include <Engine/AssetLoader/AssetReference/Texture2DReference.h>
